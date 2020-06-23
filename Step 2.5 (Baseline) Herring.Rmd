@@ -1,0 +1,136 @@
+---
+title: "Step 2.5 - Baseline"
+author: "AmeliaJohnson"
+date: "3/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Note: This code uses
+
+Spatial_Data_Alternate.xlxs (Marine Scotland): Annual average Surface temperature at each Latitude and Longitude to the 0.1 degree, predicted by the reported 0.11 decgree(C) incrase per decade found in the literature (reference).
+
+Herring_Probability_Occurrance.xls (Aquamaps I think): The overall Probability of catching Herring at each Longitude and Latitude to a quarter of a degree. (Not using for population, using this instead.)
+
+MAP DATA FOR ALTERNATE TEMPERATURE INCREASE RATE: 0.011 C PER YEAR
+
+
+Map the predicted temperature for each decade deom 2020 to 2070
+
+```{r}
+#fix column names
+names(Spatial_Data_Alternate) <- c("Latitude", "Longitude", "TempS_Amplitude", "TempS_Mean", "TempS_Max", "X2020", "X2030", "X2040", "X2050", "X2060", "X2070")
+```
+```{r}
+
+
+ggplot(Spatial_Data_Alternate, aes(Longitude, Latitude, color = X2020)) + geom_point()
+ggplot(Spatial_Data_Alternate, aes(Longitude, Latitude, color = X2030)) + geom_point()
+ggplot(Spatial_Data_Alternate, aes(Longitude, Latitude, color = X2040)) + geom_point()
+ggplot(Spatial_Data_Alternate, aes(Longitude, Latitude, color = X2050)) + geom_point()
+ggplot(Spatial_Data_Alternate, aes(Longitude, Latitude, color = X2060)) + geom_point()
+ggplot(Spatial_Data_Alternate, aes(Longitude, Latitude, color = X2070)) + geom_point()
+
+```
+We se that the temperature change is very slight.
+
+
+Match up Probability Ocurrance Data with Temperature Data:
+```{r}
+library(plyr)
+Sub_1 <-match_df(Spatial_Data_Alternate, Herring_Probability_Occurrance, on = c("Latitude", "Longitude"))
+Sub_2 <-match_df(Herring_Probability_Occurrance, Spatial_Data_Alternate, on = c("Latitude", "Longitude"))
+
+#make Lat and long into one variable
+Sub_1 <- Sub_1 %>% mutate(LatLong = (paste(Latitude, Longitude, sep = ", ")))
+
+Sub_2 <- Sub_2 %>% mutate(LatLong = (paste(Latitude, Longitude, sep = ", ")))
+
+Sub_L <- join(Sub_1, Sub_2, by = "LatLong", type = "full")
+```
+
+Use the square_fit model to predict the probability occurrance at each location for each decade
+
+```{r}
+library(dplyr)
+Sub_L <- Sub_L %>% mutate(Prob_2020 = 0,Prob_2030 = 0,Prob_2040 = 0,Prob_2050 = 0,Prob_2060 = 0,Prob_2070 = 0) 
+```
+
+```{r}
+#optimal areas
+Predict_2020 <- Sub_L[(c("Probability", "X2020"))] %>%
+  mutate(
+  Temp = X2020, 
+  Temp2 = X2020 ^ (2))
+Sub_L$Prob_2020 <- predict(square_fit, Predict_2020)
+rm(Predict_2020)
+
+Predict_2030 <- Sub_L[(c("Probability", "X2030"))] %>%
+  mutate(
+  Temp = X2030, 
+  Temp2 = X2030 ^ (2))
+Sub_L$Prob_2030 <- predict(square_fit, Predict_2030)
+rm(Predict_2030)
+
+Predict_2040 <- Sub_L[(c("Probability", "X2040"))] %>%
+  mutate(
+  Temp = X2040, 
+  Temp2 = X2040 ^ (2))
+Sub_L$Prob_2040 <- predict(square_fit, Predict_2040)
+rm(Predict_2040)
+
+Predict_2050 <- Sub_L[(c("Probability", "X2050"))] %>%
+  mutate(
+  Temp = X2050, 
+  Temp2 = X2050 ^ (2))
+Sub_L$Prob_2050 <- predict(square_fit, Predict_2050)
+rm(Predict_2050)
+
+Predict_2060 <- Sub_L[(c("Probability", "X2060"))] %>%
+  mutate(
+  Temp = X2060, 
+  Temp2 = X2060 ^ (2))
+Sub_L$Prob_2060 <- predict(square_fit, Predict_2060)
+rm(Predict_2060)
+
+Predict_2070 <- Sub_L[(c("Probability", "X2070"))] %>%
+  mutate(
+  Temp = X2070, 
+  Temp2 = X2070 ^ (2))
+Sub_L$Prob_2070 <- predict(square_fit, Predict_2070)
+rm(Predict_2070)
+
+```
+
+replace all negative predictions with 0 and all predictions > 1 with 1 (Probability must be between 0 and 1)
+```{r}
+Sub_L$Prob_2020[Sub_L$Prob_2020 < 0] = 0
+Sub_L$Prob_2030[Sub_L$Prob_2030 < 0] = 0
+Sub_L$Prob_2040[Sub_L$Prob_2040 < 0] = 0
+Sub_L$Prob_2050[Sub_L$Prob_2050 < 0] = 0
+Sub_L$Prob_2060[Sub_L$Prob_2060 < 0] = 0
+Sub_L$Prob_2070[Sub_L$Prob_2070 < 0] = 0
+
+```
+
+
+
+```{r}
+ggplot(Sub_L, aes(Longitude, Latitude, color = Prob_2020)) + geom_point() + scale_color_gradient(low = "red", high = "blue")
+
+ggplot(Sub_L, aes(Longitude, Latitude, color = Prob_2030)) + geom_point()+ scale_color_gradient(low = "red", high = "blue")
+
+ggplot(Sub_L, aes(Longitude, Latitude, color = Prob_2040)) + geom_point()+ scale_color_gradient(low = "red", high = "blue")
+
+ggplot(Sub_L, aes(Longitude, Latitude, color = Prob_2050)) + geom_point()+ scale_color_gradient(low = "red", high = "blue")
+
+ggplot(Sub_L, aes(Longitude, Latitude, color = Prob_2060)) + geom_point()+ scale_color_gradient(low = "red", high = "blue")
+
+ggplot(Sub_L, aes(Longitude, Latitude, color = Prob_2070)) + geom_point()+ scale_color_gradient(low = "red", high = "blue")
+
+```
+
+We see that over 50 years, the Herring population is barely mocing at all. We know this is not accurate because studies show that fish populations are already moving. (reference)

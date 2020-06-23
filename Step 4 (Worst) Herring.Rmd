@@ -1,0 +1,167 @@
+---
+title: "Step 4 - Worst Case"
+author: "AmeliaJohnson"
+date: "3/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Note: This code uses
+
+Spatial_Data_Worst.xlxs (Marine Scotland): Annual average Surface temperature at each Latitude and Longitude to the 0.1 degree, predicted by our model out 50 years at each decade, using the high end of the 80% confidence interval. 
+
+Herring_Probability_Occurrance.xls (Aquamaps I think): The overall Probability of catching Herring at each Longitude and Latitude to a quarter of a degree. (Not using for population, using this instead.)
+
+
+
+Map the predicted  temperature for each decade deom 2020 to 2070 based on the Beta from the Monthly Data linear regression
+
+```{r}
+#fix column names
+names(Spatial_Data_Worst) <- c("Latitude", "Longitude", "TempS_Amplitude", "TempS_Mean", "TempS_Max", "X2020", "X2030", "X2040", "X2050", "X2060", "X2070", "X2021", "X2022", "X2023", "X2024", "X2025", "X2026", "X2027", "X2028", "X2029")
+```
+```{r}
+Spatial_Data_Worst <- Spatial_Data_Worst[-1,]
+
+ggplot(Spatial_Data_Worst, aes(Longitude, Latitude, color = X2020)) + geom_point()
+ggplot(Spatial_Data_Worst, aes(Longitude, Latitude, color = X2030)) + geom_point()
+ggplot(Spatial_Data_Worst, aes(Longitude, Latitude, color = X2040)) + geom_point()
+ggplot(Spatial_Data_Worst, aes(Longitude, Latitude, color = X2050)) + geom_point()
+ggplot(Spatial_Data_Worst, aes(Longitude, Latitude, color = X2060)) + geom_point()
+ggplot(Spatial_Data_Worst, aes(Longitude, Latitude, color = X2070)) + geom_point()
+
+```
+
+We don't need to look at each decade because we know the fish will move even faster than in the mean Beta model, so we can skip to year by year between 2020 and 2030.
+
+Use the square_fit model to predict the probability occurrance at each locaton for each year between 2020 and 2030.
+
+Match up Probability Ocurrance Data with Temperature Data:
+(Sub_Wsetted the Spatial Data to only include the Lat/Long points that we have Probability Data for)
+
+```{r}
+library(plyr)
+Sub_W_1 <-match_df(Spatial_Data_Abridged, Herring_Probability_Occurrance, on = c("Latitude", "Longitude"))
+Sub_W_2 <-match_df(Herring_Probability_Occurrance, Spatial_Data_Worst, on = c("Latitude", "Longitude"))
+
+#make Lat and long into one variable
+Sub_W_1 <- Sub_W_1 %>% mutate(LatLong = (paste(Latitude, Longitude, sep = ", ")))
+Sub_W_2 <- Sub_W_2 %>% mutate(LatLong = (paste(Latitude, Longitude, sep = ", ")))
+
+#join the two Sub_Wsets
+Sub_W <- join(Sub_W_1, Sub_W_2, by = "LatLong", type = "full")
+
+rm(Sub_W_1)
+rm(Sub_W_2)
+
+```
+
+```{r}
+library(dplyr)
+Sub_W <- Sub_W %>% mutate(Prob_2021 = 0,Prob_2022 = 0,Prob_2023 = 0,Prob_2024 = 0,Prob_2025 = 0,Prob_2026 = 0,Prob_2027 = 0,Prob_2028 = 0,Prob_2029 = 0) 
+```
+
+```{r}
+#optimal areas
+Predict_2021 <- Sub_W[(c("Probability", "X2021"))] %>%
+  mutate(
+  Temp = X2021, 
+  Temp2 = X2021 ^ (2))
+Sub_W$Prob_2021 <- predict(square_fit, Predict_2021)
+rm(Predict_2021)
+
+Predict_2022 <- Sub_W[(c("Probability", "X2022"))] %>%
+  mutate(
+  Temp = X2022, 
+  Temp2 = X2022 ^ (2))
+Sub_W$Prob_2022 <- predict(square_fit, Predict_2022)
+rm(Predict_2022)
+
+Predict_2023 <- Sub_W[(c("Probability", "X2023"))] %>%
+  mutate(
+  Temp = X2023, 
+  Temp2 = X2023 ^ (2))
+Sub_W$Prob_2023 <- predict(square_fit, Predict_2023)
+rm(Predict_2023)
+
+Predict_2024 <- Sub_W[(c("Probability", "X2024"))] %>%
+  mutate(
+  Temp = X2024, 
+  Temp2 = X2024 ^ (2))
+Sub_W$Prob_2024 <- predict(square_fit, Predict_2024)
+rm(Predict_2024)
+
+Predict_2025 <- Sub_W[(c("Probability", "X2025"))] %>%
+  mutate(
+  Temp = X2025, 
+  Temp2 = X2025 ^ (2))
+Sub_W$Prob_2025 <- predict(square_fit, Predict_2025)
+rm(Predict_2025)
+
+Predict_2026 <- Sub_W[(c("Probability", "X2026"))] %>%
+  mutate(
+  Temp = X2026, 
+  Temp2 = X2026 ^ (2))
+Sub_W$Prob_2026 <- predict(square_fit, Predict_2026)
+rm(Predict_2026)
+
+Predict_2027 <- Sub_W[(c("Probability", "X2027"))] %>%
+  mutate(
+  Temp = X2027, 
+  Temp2 = X2027 ^ (2))
+Sub_W$Prob_2027 <- predict(square_fit, Predict_2027)
+rm(Predict_2027)
+
+Predict_2028 <- Sub_W[(c("Probability", "X2028"))] %>%
+  mutate(
+  Temp = X2028, 
+  Temp2 = X2028 ^ (2))
+Sub_W$Prob_2028 <- predict(square_fit, Predict_2028)
+rm(Predict_2028)
+
+Predict_2029 <- Sub_W[(c("Probability", "X2029"))] %>%
+  mutate(
+  Temp = X2029, 
+  Temp2 = X2029 ^ (2))
+Sub_W$Prob_2029 <- predict(square_fit, Predict_2029)
+rm(Predict_2029)
+
+
+
+```
+
+replace all negative predictions with 0 and all predictions > 1 with 1 (Probability must be between 0 and 1)
+```{r}
+Sub_W$Prob_2021[Sub_W$Prob_2021 < 0] = 0
+Sub_W$Prob_2022[Sub_W$Prob_2022 < 0] = 0
+Sub_W$Prob_2023[Sub_W$Prob_2023 < 0] = 0
+Sub_W$Prob_2024[Sub_W$Prob_2024 < 0] = 0
+Sub_W$Prob_2025[Sub_W$Prob_2025 < 0] = 0
+Sub_W$Prob_2026[Sub_W$Prob_2026 < 0] = 0
+Sub_W$Prob_2027[Sub_W$Prob_2027 < 0] = 0
+Sub_W$Prob_2028[Sub_W$Prob_2028 < 0] = 0
+Sub_W$Prob_2029[Sub_W$Prob_2029 < 0] = 0
+
+
+```
+
+
+
+```{r}
+ggplot(Sub_W, aes(Longitude, Latitude, color = Prob_2021)) + geom_point() + scale_color_gradient(low = "red", high = "blue")
+ggplot(Sub_W, aes(Longitude, Latitude, color = Prob_2022)) + geom_point() + scale_color_gradient(low = "red", high = "blue")
+ggplot(Sub_W, aes(Longitude, Latitude, color = Prob_2023)) + geom_point() + scale_color_gradient(low = "red", high = "blue")
+ggplot(Sub_W, aes(Longitude, Latitude, color = Prob_2024)) + geom_point() + scale_color_gradient(low = "red", high = "blue")
+ggplot(Sub_W, aes(Longitude, Latitude, color = Prob_2025)) + geom_point() + scale_color_gradient(low = "red", high = "blue")
+ggplot(Sub_W, aes(Longitude, Latitude, color = Prob_2026)) + geom_point() + scale_color_gradient(low = "red", high = "blue")
+ggplot(Sub_W, aes(Longitude, Latitude, color = Prob_2027)) + geom_point() + scale_color_gradient(low = "red", high = "blue")
+ggplot(Sub_W, aes(Longitude, Latitude, color = Prob_2028)) + geom_point() + scale_color_gradient(low = "red", high = "blue")
+ggplot(Sub_W, aes(Longitude, Latitude, color = Prob_2029)) + geom_point() + scale_color_gradient(low = "red", high = "blue")
+
+
+```
+
+The worst case data show that the fish will be gone by 2023 or 2024.

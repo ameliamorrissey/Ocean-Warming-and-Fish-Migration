@@ -1,0 +1,143 @@
+---
+title: "Step 3 - Decade, mean Beta"
+author: "AmeliaJohnson"
+date: "3/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Note: This code uses
+
+Spatial_Data_Abridged.xlxs (Marine Scotland): Annual average Surface temperature at each Latitude and Longitude to the 0.1 degree, predicted by our model out 50 years at each decade. 
+
+Herring_Probability_Occurrance.xls (Aquamaps I think): The overall Probability of catching Herring at each Longitude and Latitude to a quarter of a degree. (Not using for population, using this instead.)
+
+
+
+Map the predicted  temperature for each decade deom 2020 to 2070 based on the Beta from the Monthly Data linear regression
+
+```{r}
+#fix column names
+names(Spatial_Data_Abridged) <- c("Latitude", "Longitude", "TempS_Amplitude", "TempS_Mean", "TempS_Max", "X2020", "X2030", "X2040", "X2050", "X2060", "X2070", "X2021", "X2022", "X2023", "X2024", "X2025", "X2026", "X2027", "X2028", "X2029")
+```
+```{r}
+Spatial_Data_Abridged <- Spatial_Data_Abridged[-1,]
+
+ggplot(Spatial_Data_Abridged, aes(Longitude, Latitude, color = X2020)) + geom_point()
+ggplot(Spatial_Data_Abridged, aes(Longitude, Latitude, color = X2030)) + geom_point()
+ggplot(Spatial_Data_Abridged, aes(Longitude, Latitude, color = X2040)) + geom_point()
+ggplot(Spatial_Data_Abridged, aes(Longitude, Latitude, color = X2050)) + geom_point()
+ggplot(Spatial_Data_Abridged, aes(Longitude, Latitude, color = X2060)) + geom_point()
+ggplot(Spatial_Data_Abridged, aes(Longitude, Latitude, color = X2070)) + geom_point()
+
+```
+
+Match up Probability Ocurrance Data with Temperature Data:
+(Sub_Msetted the Spatial Data to only include the Lat/Long points that we have Probability Data for)
+
+```{r}
+library(plyr)
+Sub_M_1 <-match_df(Spatial_Data_Abridged, Mackerel_Probability_Occurrance, on = c("Latitude", "Longitude"))
+Sub_M_2 <-match_df(Mackerel_Probability_Occurrance, Spatial_Data_Abridged, on = c("Latitude", "Longitude"))
+
+#make Lat and long into one variable
+library(dplyr)
+Sub_M_1 <- Sub_M_1 %>% mutate(LatLong = (paste(Latitude, Longitude, sep = ", ")))
+Sub_M_2 <- Sub_M_2 %>% mutate(LatLong = (paste(Latitude, Longitude, sep = ", ")))
+
+#join the two Sub_Msets
+Sub_M <- join(Sub_M_1, Sub_M_2, by = "LatLong", type = "full")
+
+rm(Sub_M_1)
+rm(Sub_M_2)
+
+```
+
+
+Use the square_fit model to predict the probability occurrance at each location for each decade
+
+```{r}
+library(dplyr)
+Sub_M <- Sub_M %>% mutate(Prob_2020 = 0,Prob_2030 = 0,Prob_2040 = 0,Prob_2050 = 0,Prob_2060 = 0,Prob_2070 = 0) 
+```
+
+```{r}
+#optimal areas
+Predict_2020 <- Sub_M[(c("Probability", "X2020"))] %>%
+  mutate(
+  Temp = X2020, 
+  Temp2 = X2020 ^ (2))
+Sub_M$Prob_2020 <- predict(square_fit, Predict_2020)
+rm(Predict_2020)
+
+Predict_2030 <- Sub_M[(c("Probability", "X2030"))] %>%
+  mutate(
+  Temp = X2030, 
+  Temp2 = X2030 ^ (2))
+Sub_M$Prob_2030 <- predict(square_fit, Predict_2030)
+rm(Predict_2030)
+
+Predict_2040 <- Sub_M[(c("Probability", "X2040"))] %>%
+  mutate(
+  Temp = X2040, 
+  Temp2 = X2040 ^ (2))
+Sub_M$Prob_2040 <- predict(square_fit, Predict_2040)
+rm(Predict_2040)
+
+Predict_2050 <- Sub_M[(c("Probability", "X2050"))] %>%
+  mutate(
+  Temp = X2050, 
+  Temp2 = X2050 ^ (2))
+Sub_M$Prob_2050 <- predict(square_fit, Predict_2050)
+rm(Predict_2050)
+
+Predict_2060 <- Sub_M[(c("Probability", "X2060"))] %>%
+  mutate(
+  Temp = X2060, 
+  Temp2 = X2060 ^ (2))
+Sub_M$Prob_2060 <- predict(square_fit, Predict_2060)
+rm(Predict_2060)
+
+Predict_2070 <- Sub_M[(c("Probability", "X2070"))] %>%
+  mutate(
+  Temp = X2070, 
+  Temp2 = X2070 ^ (2))
+Sub_M$Prob_2070 <- predict(square_fit, Predict_2070)
+rm(Predict_2070)
+
+```
+
+replace all negative predictions with 0 and all predictions > 1 with 1 (Probability must be between 0 and 1)
+```{r}
+Sub_M$Prob_2020[Sub_M$Prob_2020 < 0] = 0
+Sub_M$Prob_2030[Sub_M$Prob_2030 < 0] = 0
+Sub_M$Prob_2040[Sub_M$Prob_2040 < 0] = 0
+Sub_M$Prob_2050[Sub_M$Prob_2050 < 0] = 0
+Sub_M$Prob_2060[Sub_M$Prob_2060 < 0] = 0
+Sub_M$Prob_2070[Sub_M$Prob_2070 < 0] = 0
+
+```
+
+
+
+```{r}
+library(ggplot2)
+
+ggplot(Sub_M, aes(Longitude, Latitude, color = Prob_2020)) + geom_point() + scale_color_gradient(low = "red", high = "blue")
+
+ggplot(Sub_M, aes(Longitude, Latitude, color = Prob_2030)) + geom_point()+ scale_color_gradient(low = "red", high = "blue")
+
+ggplot(Sub_M, aes(Longitude, Latitude, color = Prob_2040)) + geom_point()+ scale_color_gradient(low = "red", high = "blue")
+
+ggplot(Sub_M, aes(Longitude, Latitude, color = Prob_2050)) + geom_point()+ scale_color_gradient(low = "red", high = "blue")
+
+ggplot(Sub_M, aes(Longitude, Latitude, color = Prob_2060)) + geom_point()+ scale_color_gradient(low = "red", high = "blue")
+
+ggplot(Sub_M, aes(Longitude, Latitude, color = Prob_2070)) + geom_point()+ scale_color_gradient(low = "red", high = "blue")
+
+```
+
+We see that the affect of temperature change on Mackerel is much less than that on Herring. The fish seem to move to the Northeast.

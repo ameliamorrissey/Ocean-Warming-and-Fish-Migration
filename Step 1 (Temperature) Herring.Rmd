@@ -1,0 +1,65 @@
+---
+title: "Step 1 - find Beta and confint"
+author: "AmeliaJohnson"
+date: "3/25/2020"---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Note: This code uses
+
+Monthly_Data.cvs (Marine Scotland): Records all the monthly surface areas for 13 Scottish Sea Areas from 1997 to 2014. (No longitude and Latitude)
+
+
+
+Look at the monthly temperature data for 1985 - 2014
+```{r}
+names(Monthly_Data)
+library(ggplot2)
+ggplot(data = Monthly_Data, mapping = aes(x = Decimal_Year , y = Monthly_Temperature)) + geom_line() + geom_smooth(method = "lm")
+
+ggplot(data = Monthly_Data, mapping = aes(x = Decimal_Year , y = Monthly_Temperature, color = Sea_Area)) + geom_line()  + geom_smooth(method = "lm", se = F)
+
+ggplot(data = Monthly_Data, mapping = aes(x = Decimal_Year , y = Monthly_Temperature, color = Sea_Area)) + geom_line() + geom_smooth(se = F) 
+```
+
+Run a regression on the historical temperature data to find a Beta for monthly temperature increase
+
+Monthly_Temp = Beta_0 + Beta_1(Decimal_Year)
+
+interpretations: For each month increase, the Temp increases by Beta_1
+```{r}
+lm_fit <- lm(Monthly_Temperature ~ Decimal_Year, data = Monthly_Data)
+
+summary(lm_fit)
+confint(lm_fit)
+confint(lm_fit, level = 0.80)
+
+plot(lm_fit)
+
+ggplot(Monthly_Data, aes(Monthly_Temperature)) + geom_density()
+
+
+```
+Beta_1: 0.015137
+95% confidence intervals for the Betas: (-0.002244637,  0.03251833)
+80% confidence intervals for the Betas: (0.003774064, 0.02649963)
+
+We now make an excel spreadsheet to predict the temperature over all the decades from 2020-2070 based on Beta_1 = 0.015137. (We will use the 80% confidence interval later because we know that the Beta is not negative.) 
+
+For these predicted values, we use the formula: 
+
+Not a regression: Temp_future = Temp_2014 + (0.015137*12)(Year - 2014)
+
+(We assume Temp_2014 =TempS_Mean)
+
+
+We will use the annual mean temperature to make these excel documents. The data are pictured here:
+Map the mean temperature
+```{r}
+#plot the map
+ggplot(Spatial_Data_Abridged, aes(Longitude, Latitude, color = as.numeric(TempS_Mean))) + geom_point()
+```

@@ -1,0 +1,92 @@
+---
+title: "Step 2 - Probability Occurrance Data"
+author: "AmeliaJohnson"
+date: "3/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Note: This code uses
+
+Spatial_Data_Abridged.xlxs (Marine Scotland): Annual average Surface temperature at each Latitude and Longitude to the 0.1 degree, predicted by our model out 50 years at each decade. 
+
+Herring_Probability_Occurrance.xls (Aquamaps I think): The overall Probability of catching Herring at each Longitude and Latitude to a quarter of a degree. (Not using for population, using this instead.)
+
+Probability Ocurrance
+
+Filter
+```{r}
+names(Herring_Probability_Occurrance) <- c("Genus", "Species", "Latitude", "Longitude", "C_Square_Code", "Probability")
+
+#subset the UK and surrounding seas
+library(dplyr)
+Herring_Probability_Occurrance <- Herring_Probability_Occurrance %>% filter(Longitude < 10) %>% filter(Longitude > -15) %>% filter(Latitude < 70) %>% filter(Latitude > 42)
+```
+
+
+Plot Probability Ocurrance
+```{r}
+library(ggplot2)
+ggplot(Herring_Probability_Occurrance, aes(Longitude, Latitude, color = Probability)) + geom_point()
+```
+
+Match up Probability Ocurrance Data with Temperature Data:
+(Subsetted the Spatial Data to only include the Lat/Long points that we have Probability Data for)
+
+```{r}
+library(plyr)
+Sub_1 <-match_df(Spatial_Data_Abridged, Herring_Probability_Occurrance, on = c("Latitude", "Longitude"))
+Sub_2 <-match_df(Herring_Probability_Occurrance, Spatial_Data_Worst, on = c("Latitude", "Longitude"))
+
+#make Lat and long into one variable
+Sub_1 <- Sub_1 %>% mutate(LatLong = (paste(Latitude, Longitude, sep = ", ")))
+Sub_2 <- Sub_2 %>% mutate(LatLong = (paste(Latitude, Longitude, sep = ", ")))
+
+#join the two subsets
+Sub_A <- join(Sub_1, Sub_2, by = "LatLong", type = "full")
+
+rm(Sub_1)
+rm(Sub_2)
+
+```
+
+
+Plot the temperature of the subset to compare with the population
+#omitted (not necessary)
+```{r}
+#ggplot(Sub, aes(Longitude, Latitude, color = Probability)) + geom_point()
+#ggplot(Sub, aes(Longitude, Latitude, color = as.numeric(TempS_Mean))) + geom_point()
+```
+
+
+Find what temperature water the fish are living in now
+```{r}
+ggplot(data = Sub_A, mapping = aes(x = as.numeric(TempS_Mean) , y = Probability)) + geom_point() + geom_smooth()
+ggplot(data = Sub_A, mapping = aes(x = as.numeric(TempS_Mean))) + geom_density()
+ggplot(data = Sub_A, mapping = aes(x = Probability)) + geom_density()
+
+```
+
+Run a quadratic model of Temp Vs. Probability at each loction.
+```{r}
+#fit a -x^2 model
+Make_Sub <- Sub_A[(c("Probability", "TempS_Mean"))] %>%
+  mutate(
+  Temp = (as.numeric(TempS_Mean)), 
+  Temp2 = (as.numeric(TempS_Mean)) ^ (2))
+
+square_fit <- lm(Probability ~ Temp + Temp2, Make_Sub)
+rm(Make_Sub)
+plot(square_fit)
+#plot(Sub$Probability, Sub$as.numeric(TempS_Mean), type='l', col='navy', main='Nonlinear relationship', lwd=3)
+summary(square_fit)
+
+```
+
+```{r}
+rm(Sub_A)
+```
+
